@@ -1,0 +1,26 @@
+# Claude Code local files
+CLAUDE.local.md
+.claude/settings.local.json
+docs/plans/*
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python (for cert.py and asset generation scripts)
+__pycache__/
+*.pyc
+*.pyo
+.python-version
