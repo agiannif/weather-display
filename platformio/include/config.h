@@ -86,8 +86,8 @@
 //   Metric   : Celsius
 //   Imperial : Fahrenheit
 // #define UNITS_TEMP_KELVIN
-// #define UNITS_TEMP_CELSIUS
-#define UNITS_TEMP_FAHRENHEIT
+#define UNITS_TEMP_CELSIUS
+// #define UNITS_TEMP_FAHRENHEIT
 
 // UNITS - WIND SPEED
 //   Metric   : Kilometers per Hour
@@ -136,29 +136,6 @@
 // #define UNITS_DAILY_PRECIP_MILLIMETERS
 // #define UNITS_DAILY_PRECIP_CENTIMETERS
 #define UNITS_DAILY_PRECIP_INCHES
-
-// Hypertext Transfer Protocol (HTTP)
-// HTTP
-//   HTTP does not provide encryption or any security measures, making it highly
-//   vulnerable to eavesdropping and data tampering. Has the advantage of using
-//   less power.
-// HTTPS_NO_CERT_VERIF
-//   HTTPS without X.509 certificate verification provides encryption but lacks
-//   authentication and is susceptible to man-in-the-middle attacks.
-// HTTPS_WITH_CERT_VERIF
-//   HTTPS with X.509 certificate verification offers the highest level of
-//   security by providing encryption and verifying the identity of the server.
-//
-//   HTTPS with X.509 certificate verification comes with the draw back that
-//   eventually the certificates on the esp32 will expire, requiring you to
-//   update the certificates in cert.h and reflash this software.
-//   Running cert.py will generate an updated cert.h file.
-//   The current certificate for api.openweathermap.org is valid until
-//   2026-04-10 23:59:59+00:00
-// (uncomment exactly one)
-// #define USE_HTTP
-// #define USE_HTTPS_NO_CERT_VERIF
-#define USE_HTTPS_WITH_CERT_VERIF // REQUIRES MANUAL UPDATE WHEN CERT EXPIRES
 
 // WIND DIRECTION INDICATOR
 // Choose whether the wind direction indicator should be an arrow, number, or
@@ -218,19 +195,7 @@
 #define POS_VISIBILITY  7
 #define POS_INTEMP      8
 #define POS_INHUMIDITY  9
-// #define POS_MOONRISE    2
-// #define POS_MOONSET     3
-// #define POS_MOONPHASE   4
 // #define POS_DEWPOINT    5
-
-
-// Choose the style of moon phase icon you like
-//   Primary     : dark color means where the moon is
-//   Alternative : dark color means where the shadow is
-// Uncomment your preferred moon phase style.
-// #define MOONPHASE_PRIMARY
-#define MOONPHASE_ALTERNATIVE
-
 
 // FONTS
 // A handful of popular Open Source typefaces have been included with this
@@ -287,11 +252,8 @@
 #define DISPLAY_HOURLY_ICONS 1
 
 // ALERTS
-//   The handling of alerts is complex. Each country has a unique national alert
-//   system that receives alerts from many different government agencies. This
-//   results is huge variance in the formatting of alerts. OpenWeatherMap
-//   provides alerts in English only. Any combination of these factors may make
-//   it undesirable to display alerts in some regions.
+//   Note: Weather alerts are not available with the Open-Meteo API.
+//   This setting is preserved for backward compatibility but has no effect.
 //   Disable alerts by changing the DISPLAY_ALERTS macro to 0.
 #define DISPLAY_ALERTS 1
 
@@ -337,13 +299,11 @@ extern const char *WIFI_SSID;
 extern const char *WIFI_PASSWORD;
 extern const unsigned long WIFI_TIMEOUT;
 extern const unsigned HTTP_CLIENT_TCP_TIMEOUT;
-extern const String OWM_APIKEY;
-extern const String OWM_ENDPOINT;
-extern const String OWM_ONECALL_VERSION;
 extern const String LAT;
 extern const String LON;
 extern const String CITY_STRING;
 extern const char *TIMEZONE;
+extern const char *API_TIMEZONE;
 extern const char *TIME_FORMAT;
 extern const char *HOUR_FORMAT;
 extern const char *DATE_FORMAT;
@@ -425,11 +385,6 @@ extern const uint32_t MIN_BATTERY_VOLTAGE;
       ^ defined(UNITS_DAILY_PRECIP_INCHES))
   #error Invalid configuration. Exactly one daily precipitation measurement must be selected.
 #endif
-#if !(  defined(USE_HTTP)                   \
-      ^ defined(USE_HTTPS_NO_CERT_VERIF)    \
-      ^ defined(USE_HTTPS_WITH_CERT_VERIF))
-  #error Invalid configuration. Exactly one HTTP mode must be selected.
-#endif
 #if !(  defined(WIND_INDICATOR_ARROW)                         \
       || (                                                    \
           defined(WIND_INDICATOR_NUMBER)                      \
@@ -466,10 +421,6 @@ extern const uint32_t MIN_BATTERY_VOLTAGE;
 #endif
 #if !(defined(DEBUG_LEVEL))
   #error Invalid configuration. DEBUG_LEVEL not defined.
-#endif
-#if !(  defined(MOONPHASE_PRIMARY)  \
-      ^ defined(MOONPHASE_ALTERNATIVE))
-  #error Invalid configuration. Exactly one moon phase style must be selected.
 #endif
 
 #endif

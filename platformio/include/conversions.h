@@ -23,11 +23,11 @@ float kelvin_to_fahrenheit(float kelvin);
 float celsius_to_kelvin(float celsius);
 float celsius_to_fahrenheit(float celsius);
 
-float meterspersecond_to_feetpersecond(float meterspersecond);
-float meterspersecond_to_kilometersperhour(float meterspersecond);
-float meterspersecond_to_milesperhour(float meterspersecond);
-float meterspersecond_to_knots(float meterspersecond);
-int meterspersecond_to_beaufort(float meterspersecond);
+float kilometersperhour_to_feetpersecond(float kilometersperhour);
+float kilometersperhour_to_meterspersecond(float kilometersperhour);
+float kilometersperhour_to_milesperhour(float kilometersperhour);
+float kilometersperhour_to_knots(float kilometersperhour);
+int kilometersperhour_to_beaufort(float kilometersperhour);
 
 float hectopascals_to_pascals(float hectopascals);
 float hectopascals_to_millimetersofmercury(float hectopascals);

@@ -1,5 +1,8 @@
-/* Client side utility declarations for esp32-weather-epd.
- * Copyright (C) 2022-2023  Luke Marzen
+/* Client utility declarations for esp32-weather-epd.
+ * Copyright (C) 2022-2025  Luke Marzen
+ * Copyright (C) 2026  Anthony Fenzl
+ *
+ * Modified to use Open-Meteo API instead of OpenWeatherMap API.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,26 +22,21 @@
 #define __CLIENT_UTILS_H__
 
 #include <Arduino.h>
+#include <WiFi.h>
 #include "api_response.h"
-#include "config.h"
-#ifdef USE_HTTP
-  #include <WiFiClient.h>
-#else
-  #include <WiFiClientSecure.h>
-#endif
 
-wl_status_t startWiFi(int &wifiRSSI);
+// WiFi connection
+wl_status_t startWiFi();
 void killWiFi();
-bool waitForSNTPSync(tm *timeInfo);
-bool printLocalTime(tm *timeInfo);
-#ifdef USE_HTTP
-  int getOWMonecall(WiFiClient &client, owm_resp_onecall_t &r);
-  int getOWMairpollution(WiFiClient &client, owm_resp_air_pollution_t &r);
-#else
-  int getOWMonecall(WiFiClientSecure &client, owm_resp_onecall_t &r);
-  int getOWMairpollution(WiFiClientSecure &client, owm_resp_air_pollution_t &r);
+
+// Time synchronization
+bool waitForSNTPSync();
+
+// API requests (Open-Meteo)
+bool getForecast(om_resp_forecast_t &forecast);
+bool getAirQuality(om_resp_air_quality_t &airQuality);
+
+// Debug
+void printHeapUsage();
+
 #endif
-
-
-#endif
-

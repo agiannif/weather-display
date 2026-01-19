@@ -39,33 +39,35 @@ float celsius_to_fahrenheit(float celsius)
   return celsius * (9.f / 5.f) + 32.f;
 } // end celsius_to_fahrenheit
 
-float meterspersecond_to_feetpersecond(float meterspersecond)
+float kilometersperhour_to_feetpersecond(float kilometersperhour)
 {
-  return meterspersecond * 3.281f;
-} // end meterspersecond_to_feetpersecond
+  return kilometersperhour * 0.9113f;
+} // end kilometersperhour_to_feetpersecond
 
-float meterspersecond_to_kilometersperhour(float meterspersecond)
+float kilometersperhour_to_meterspersecond(float kilometersperhour)
 {
-  return meterspersecond * 3.6f;
-} // end meterspersecond_to_kilometersperhour
+  return kilometersperhour / 3.6f;
+} // end kilometersperhour_to_meterspersecond
 
-float meterspersecond_to_milesperhour(float meterspersecond)
+float kilometersperhour_to_milesperhour(float kilometersperhour)
 {
-  return meterspersecond * 2.237f;
-} // end meterspersecond_to_milesperhour
+  return kilometersperhour * 0.6214f;
+} // end kilometersperhour_to_milesperhour
 
-float meterspersecond_to_knots(float meterspersecond)
+float kilometersperhour_to_knots(float kilometersperhour)
 {
-  return meterspersecond * 1.944f;
-} // end meterspersecond_to_knots
+  return kilometersperhour * 0.5400f;
+} // end kilometersperhour_to_knots
 
-int meterspersecond_to_beaufort(float meterspersecond)
+int kilometersperhour_to_beaufort(float kilometersperhour)
 {
+  // Beaufort scale uses m/s, so convert first
+  float meterspersecond = kilometersperhour / 3.6f;
   int beaufort = (int) ((powf( 1 / 0.836f, 2.f/3.f)
                          * powf(meterspersecond, 2.f/3.f))
                         + .5f);
   return beaufort > 12 ? 12 : beaufort;
-} // end meterspersecond_to_beaufort
+} // end kilometersperhour_to_beaufort
 
 float hectopascals_to_pascals(float hectopascals)
 {

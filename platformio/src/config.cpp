@@ -1,5 +1,8 @@
 /* Configuration options for esp32-weather-epd.
  * Copyright (C) 2022-2025  Luke Marzen
+ * Copyright (C) 2026  Anthony Fenzl
+ *
+ * Modified to use Open-Meteo API instead of OpenWeatherMap API.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,45 +52,29 @@ const char *WIFI_PASSWORD = "password";
 const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 
 // HTTP
-// The following errors are likely the result of insuffient http client tcp 
+// The following errors are likely the result of insuffient http client tcp
 // timeout:
 //   -1   Connection Refused
 //   -11  Read Timeout
 //   -258 Deserialization Incomplete Input
 const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
 
-// OPENWEATHERMAP API
-// OpenWeatherMap API key, https://openweathermap.org/
-const String OWM_APIKEY   = "abcdefghijklmnopqrstuvwxyz012345";
-const String OWM_ENDPOINT = "api.openweathermap.org";
-// OpenWeatherMap One Call 2.5 API is deprecated for all new free users
-// (accounts created after Summer 2022).
-//
-// Please note, that One Call API 3.0 is included in the "One Call by Call"
-// subscription only. This separate subscription includes 1,000 calls/day for
-// free and allows you to pay only for the number of API calls made to this
-// product.
-//
-// Here’s how to subscribe and avoid any credit card changes:
-// - Go to https://home.openweathermap.org/subscriptions/billing_info/onecall_30/base?key=base&service=onecall_30
-// - Follow the instructions to complete the subscription.
-// - Go to https://home.openweathermap.org/subscriptions and set the "Calls per
-//   day (no more than)" to 1,000. This ensures you will never overrun the free
-//   calls.
-const String OWM_ONECALL_VERSION = "3.0";
-
 // LOCATION
 // Set your latitude and longitude.
-// (used to get weather data as part of API requests to OpenWeatherMap)
-const String LAT = "40.7128";
-const String LON = "-74.0060";
+// (used to get weather data as part of API requests to Open-Meteo)
+const String LAT = "YOUR LAT";
+const String LON = "YOUR LON";
 // City name that will be shown in the top-right corner of the display.
-const String CITY_STRING = "New York";
+const String CITY_STRING = "YOUR CITY";
 
 // TIME
 // For list of time zones see
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char *TIMEZONE = "EST5EDT,M3.2.0,M11.1.0";
+const char *TIMEZONE = "YOUR TZ";
+// Open-Meteo API timezone (IANA format or "auto")
+// Examples: "America/Los_Angeles", "Europe/London", "auto"
+// Using "auto" lets Open-Meteo determine timezone from coordinates
+const char *API_TIMEZONE = "auto";
 // Time format used when displaying sunrise/set times. (Max 11 characters)
 // For more information about formatting see
 // https://man7.org/linux/man-pages/man3/strftime.3.html
@@ -118,14 +105,14 @@ const unsigned long NTP_TIMEOUT = 20000; // ms
 // Aligned to the nearest minute boundary.
 // For example, if set to 30 (minutes) the display will update at 00 or 30
 // minutes past the hour. (range: [2-1440])
-// Note: The OpenWeatherMap model is updated every 10 minutes, so updating more
-//       frequently than that is unnessesary.
+// Note: The Open-Meteo model is updated every 15 minutes, so updating more
+//       frequently than that is unnecessary.
 const int SLEEP_DURATION = 30; // minutes
 // Bed Time Power Savings.
 // If BED_TIME == WAKE_TIME, then this battery saving feature will be disabled.
 // (range: [0-23])
 const int BED_TIME  = 00; // Last update at 00:00 (midnight) until WAKE_TIME.
-const int WAKE_TIME = 06; // Hour of first update after BED_TIME, 06:00.
+const int WAKE_TIME = 05; // Hour of first update after BED_TIME, 06:00.
 // Note that the minute alignment of SLEEP_DURATION begins at WAKE_TIME even if
 // Bed Time Power Savings is disabled.
 // For example, if WAKE_TIME = 00 (midnight) and SLEEP_DURATION = 120, then the

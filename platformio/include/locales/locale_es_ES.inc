@@ -248,18 +248,6 @@ const std::vector<String> TERM_STRONG_WIND =
     {"wind", "monsoon"};
 
 // AIR QUALITY INDEX
-extern "C" {
-// Seemingly every country uses a different scale for Air Quality Index (AQI).
-// I have written a library to calculate many of the most popular AQI scales.
-// Feel free to request the addition of a new AQI scale by opening an Issue.
-// https://github.com/lmarzen/pollutant-concentration-to-aqi
-// Please choose this region's preferred AQI scale.
-//   AUSTRALIA_AQI        CANADA_AQHI          EUROPEAN_UNION_CAQI
-//   HONG_KONG_AQHI       INDIA_AQI            CHINA_AQI
-//   SINGAPORE_PSI        SOUTH_KOREA_CAI      UNITED_KINGDOM_DAQI
-//   UNITED_STATES_AQI
-const aqi_scale_t AQI_SCALE = EUROPEAN_UNION_CAQI;
-
 const char *AUSTRALIA_AQI_TXT[6] =
 {
   "Muy Bueno",
@@ -341,7 +329,6 @@ const char *UNITED_STATES_AQI_TXT[6] =
   "Muy Poco Saludable",
   "Peligroso",
 };
-} // end extern "C"
 
 // COMPASS POINT
 const char *COMPASS_POINT_NOTATION[32] = {

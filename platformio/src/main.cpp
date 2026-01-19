@@ -1,5 +1,8 @@
 /* Main program for esp32-weather-epd.
  * Copyright (C) 2022-2025  Luke Marzen
+ * Copyright (C) 2026  Anthony Fenzl
+ *
+ * Modified to use Open-Meteo API instead of OpenWeatherMap API.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,16 +40,11 @@
 #if defined(SENSOR_BME680)
   #include <Adafruit_BME680.h>
 #endif
-#if defined(USE_HTTPS_WITH_CERT_VERIF) || defined(USE_HTTPS_WITH_CERT_VERIF)
-  #include <WiFiClientSecure.h>
-#endif
-#ifdef USE_HTTPS_WITH_CERT_VERIF
-  #include "cert.h"
-#endif
+#include <WiFiClientSecure.h>
 
 // too large to allocate locally on stack
-static owm_resp_onecall_t       owm_onecall;
-static owm_resp_air_pollution_t owm_air_pollution;
+static om_resp_forecast_t    forecast;
+static om_resp_air_quality_t air_quality;
 
 Preferences prefs;
 
@@ -207,8 +205,8 @@ void setup()
   tm timeInfo = {};
 
   // START WIFI
-  int wifiRSSI = 0; // “Received Signal Strength Indicator"
-  wl_status_t wifiStatus = startWiFi(wifiRSSI);
+  wl_status_t wifiStatus = startWiFi();
+  int wifiRSSI = (wifiStatus == WL_CONNECTED) ? WiFi.RSSI() : 0;
   if (wifiStatus != WL_CONNECTED)
   { // WiFi Connection Failed
     killWiFi();
@@ -235,7 +233,7 @@ void setup()
 
   // TIME SYNCHRONIZATION
   configTzTime(TIMEZONE, NTP_SERVER_1, NTP_SERVER_2);
-  bool timeConfigured = waitForSNTPSync(&timeInfo);
+  bool timeConfigured = waitForSNTPSync();
   if (!timeConfigured)
   {
     Serial.println(TXT_TIME_SYNCHRONIZATION_FAILED);
@@ -248,23 +246,16 @@ void setup()
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
+  // Get current time info
+  time_t now = time(nullptr);
+  localtime_r(&now, &timeInfo);
 
-  // MAKE API REQUESTS
-#ifdef USE_HTTP
-  WiFiClient client;
-#elif defined(USE_HTTPS_NO_CERT_VERIF)
-  WiFiClientSecure client;
-  client.setInsecure();
-#elif defined(USE_HTTPS_WITH_CERT_VERIF)
-  WiFiClientSecure client;
-  client.setCACert(cert_Sectigo_RSA_Organization_Validation_Secure_Server_CA);
-#endif
-  int rxStatus = getOWMonecall(client, owm_onecall);
-  if (rxStatus != HTTP_CODE_OK)
+  // MAKE API REQUESTS (Open-Meteo)
+  if (!getForecast(forecast))
   {
     killWiFi();
-    statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    statusStr = "Forecast API";
+    tmpStr = "Failed to fetch forecast data";
     initDisplay();
     do
     {
@@ -273,12 +264,11 @@ void setup()
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
-  rxStatus = getOWMairpollution(client, owm_air_pollution);
-  if (rxStatus != HTTP_CODE_OK)
+  if (!getAirQuality(air_quality))
   {
     killWiFi();
-    statusStr = "Air Pollution API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    statusStr = "Air Quality API";
+    tmpStr = "Failed to fetch air quality data";
     initDisplay();
     do
     {
@@ -346,14 +336,11 @@ void setup()
   initDisplay();
   do
   {
-    drawCurrentConditions(owm_onecall.current, owm_onecall.daily[0],
-                          owm_air_pollution, inTemp, inHumidity);
-    drawOutlookGraph(owm_onecall.hourly, owm_onecall.daily, timeInfo);
-    drawForecast(owm_onecall.daily, timeInfo);
+    drawCurrentConditions(forecast.current, forecast.daily[0],
+                          air_quality, inTemp, inHumidity);
+    drawOutlookGraph(forecast.hourly, forecast.daily, timeInfo);
+    drawForecast(forecast.daily, timeInfo);
     drawLocationDate(CITY_STRING, dateStr);
-#if DISPLAY_ALERTS
-    drawAlerts(owm_onecall.alerts, CITY_STRING, dateStr);
-#endif
     drawStatusBar(statusStr, refreshTimeStr, wifiRSSI, batteryVoltage);
   } while (display.nextPage());
   powerOffDisplay();
