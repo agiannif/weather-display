@@ -28,6 +28,22 @@
 static const char *OM_FORECAST_HOST = "api.open-meteo.com";
 static const char *OM_AIR_QUALITY_HOST = "air-quality-api.open-meteo.com";
 
+// Helper function to determine if an HTTP error code is retryable
+static bool isRetryableError(int httpCode)
+{
+  // Only retry on transient connection errors, not permanent errors
+  switch (httpCode)
+  {
+    case -1:  // Connection Refused
+    case -4:  // Not Connected
+    case -5:  // Connection Lost
+    case -11: // Read Timeout
+      return true;
+    default:
+      return false;
+  }
+}
+
 wl_status_t startWiFi()
 {
   WiFi.mode(WIFI_STA);
@@ -95,7 +111,7 @@ bool waitForSNTPSync()
   return true;
 }
 
-bool getForecast(om_resp_forecast_t &forecast)
+bool getForecast(om_resp_forecast_t &forecast, String &errorMsg)
 {
   WiFiClientSecure client;
   client.setInsecure(); // Open-Meteo uses standard certs, skip verification for simplicity
@@ -121,36 +137,110 @@ bool getForecast(om_resp_forecast_t &forecast)
   url += "&forecast_days=8&forecast_hours=48";
 
   Serial.println("Fetching forecast from Open-Meteo...");
+#if DEBUG_LEVEL >= 2
   Serial.println(url);
+#endif
 
-  http.begin(client, url);
-  http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);
-
-  int httpCode = http.GET();
-
-  if (httpCode != HTTP_CODE_OK)
+  // Retry loop for transient errors
+  for (unsigned attempt = 1; attempt <= API_RETRY_ATTEMPTS; attempt++)
   {
-    Serial.printf("HTTP GET failed, error: %d\n", httpCode);
+    if (attempt > 1)
+    {
+      Serial.printf("Retry attempt %d/%d\n", attempt, API_RETRY_ATTEMPTS);
+    }
+
+    http.begin(client, url);
+    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);
+
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+      // Build error message
+      String errorType;
+      if (httpCode > 0)
+      {
+        errorType = "HTTP " + String(httpCode);
+        Serial.printf("Forecast API error: HTTP %d, RSSI: %d dBm\n", httpCode, WiFi.RSSI());
+      }
+      else
+      {
+        switch (httpCode)
+        {
+          case -1:  errorType = "Connection Refused"; break;
+          case -2:  errorType = "Send Header Failed"; break;
+          case -3:  errorType = "Send Payload Failed"; break;
+          case -4:  errorType = "Not Connected"; break;
+          case -5:  errorType = "Connection Lost"; break;
+          case -6:  errorType = "No Stream"; break;
+          case -7:  errorType = "No HTTP Server"; break;
+          case -8:  errorType = "Too Less RAM"; break;
+          case -9:  errorType = "Encoding"; break;
+          case -10: errorType = "Stream Write"; break;
+          case -11: errorType = "Read Timeout"; break;
+          default:  errorType = "Unknown Error"; break;
+        }
+        Serial.printf("Forecast API error: %s (%d), RSSI: %d dBm\n",
+                      errorType.c_str(), httpCode, WiFi.RSSI());
+      }
+
+      http.end();
+
+      // Check if we should retry
+      if (isRetryableError(httpCode) && attempt < API_RETRY_ATTEMPTS)
+      {
+        Serial.printf("Retryable error, waiting %d ms before retry...\n", API_RETRY_DELAY);
+        delay(API_RETRY_DELAY);
+        continue; // Try again
+      }
+      else
+      {
+        // No more retries or non-retryable error
+        errorMsg = errorType + " RSSI:" + String(WiFi.RSSI()) + "dBm";
+        if (attempt > 1)
+        {
+          errorMsg += " (after " + String(attempt) + " attempts)";
+        }
+        return false;
+      }
+    }
+
+    // HTTP request succeeded
+    String payload = http.getString();
+#if DEBUG_LEVEL >= 2
+    Serial.printf("HTTP GET successful (code: %d), response length: %d bytes\n",
+                  httpCode, payload.length());
+#endif
     http.end();
-    return false;
+
+    DeserializationError error = deserializeForecast(payload, forecast);
+
+    if (error)
+    {
+      Serial.printf("Forecast JSON parsing failed: %s\n", error.c_str());
+#if DEBUG_LEVEL >= 2
+      Serial.printf("Payload length: %d bytes\n", payload.length());
+      if (payload.length() > 0)
+      {
+        Serial.println("First 200 chars of response:");
+        Serial.println(payload.substring(0, min(200, (int)payload.length())));
+      }
+#endif
+
+      errorMsg = "JSON parse: " + String(error.c_str());
+      return false; // Don't retry JSON parsing errors
+    }
+
+    Serial.println("Forecast data received successfully");
+    return true;
   }
 
-  String payload = http.getString();
-  http.end();
-
-  DeserializationError error = deserializeForecast(payload, forecast);
-
-  if (error)
-  {
-    Serial.printf("JSON parsing failed: %s\n", error.c_str());
-    return false;
-  }
-
-  Serial.println("Forecast data received successfully");
-  return true;
+  // Should never reach here, but just in case
+  errorMsg = "Unknown error after retries";
+  return false;
 }
 
-bool getAirQuality(om_resp_air_quality_t &airQuality)
+bool getAirQuality(om_resp_air_quality_t &airQuality, String &errorMsg)
 {
   WiFiClientSecure client;
   client.setInsecure();
@@ -166,33 +256,107 @@ bool getAirQuality(om_resp_air_quality_t &airQuality)
   url += "&current=us_aqi";
 
   Serial.println("Fetching air quality from Open-Meteo...");
+#if DEBUG_LEVEL >= 2
   Serial.println(url);
+#endif
 
-  http.begin(client, url);
-  http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);
-
-  int httpCode = http.GET();
-
-  if (httpCode != HTTP_CODE_OK)
+  // Retry loop for transient errors
+  for (unsigned attempt = 1; attempt <= API_RETRY_ATTEMPTS; attempt++)
   {
-    Serial.printf("HTTP GET failed, error: %d\n", httpCode);
+    if (attempt > 1)
+    {
+      Serial.printf("Retry attempt %d/%d\n", attempt, API_RETRY_ATTEMPTS);
+    }
+
+    http.begin(client, url);
+    http.setTimeout(HTTP_CLIENT_TCP_TIMEOUT);
+
+    int httpCode = http.GET();
+
+    if (httpCode != HTTP_CODE_OK)
+    {
+      // Build error message
+      String errorType;
+      if (httpCode > 0)
+      {
+        errorType = "HTTP " + String(httpCode);
+        Serial.printf("Air Quality API error: HTTP %d, RSSI: %d dBm\n", httpCode, WiFi.RSSI());
+      }
+      else
+      {
+        switch (httpCode)
+        {
+          case -1:  errorType = "Connection Refused"; break;
+          case -2:  errorType = "Send Header Failed"; break;
+          case -3:  errorType = "Send Payload Failed"; break;
+          case -4:  errorType = "Not Connected"; break;
+          case -5:  errorType = "Connection Lost"; break;
+          case -6:  errorType = "No Stream"; break;
+          case -7:  errorType = "No HTTP Server"; break;
+          case -8:  errorType = "Too Less RAM"; break;
+          case -9:  errorType = "Encoding"; break;
+          case -10: errorType = "Stream Write"; break;
+          case -11: errorType = "Read Timeout"; break;
+          default:  errorType = "Unknown Error"; break;
+        }
+        Serial.printf("Air Quality API error: %s (%d), RSSI: %d dBm\n",
+                      errorType.c_str(), httpCode, WiFi.RSSI());
+      }
+
+      http.end();
+
+      // Check if we should retry
+      if (isRetryableError(httpCode) && attempt < API_RETRY_ATTEMPTS)
+      {
+        Serial.printf("Retryable error, waiting %d ms before retry...\n", API_RETRY_DELAY);
+        delay(API_RETRY_DELAY);
+        continue; // Try again
+      }
+      else
+      {
+        // No more retries or non-retryable error
+        errorMsg = errorType + " RSSI:" + String(WiFi.RSSI()) + "dBm";
+        if (attempt > 1)
+        {
+          errorMsg += " (after " + String(attempt) + " attempts)";
+        }
+        return false;
+      }
+    }
+
+    // HTTP request succeeded
+    String payload = http.getString();
+#if DEBUG_LEVEL >= 2
+    Serial.printf("HTTP GET successful (code: %d), response length: %d bytes\n",
+                  httpCode, payload.length());
+#endif
     http.end();
-    return false;
+
+    DeserializationError error = deserializeAirQuality(payload, airQuality);
+
+    if (error)
+    {
+      Serial.printf("Air Quality JSON parsing failed: %s\n", error.c_str());
+#if DEBUG_LEVEL >= 2
+      Serial.printf("Payload length: %d bytes\n", payload.length());
+      if (payload.length() > 0)
+      {
+        Serial.println("First 200 chars of response:");
+        Serial.println(payload.substring(0, min(200, (int)payload.length())));
+      }
+#endif
+
+      errorMsg = "JSON parse: " + String(error.c_str());
+      return false; // Don't retry JSON parsing errors
+    }
+
+    Serial.println("Air quality data received successfully");
+    return true;
   }
 
-  String payload = http.getString();
-  http.end();
-
-  DeserializationError error = deserializeAirQuality(payload, airQuality);
-
-  if (error)
-  {
-    Serial.printf("JSON parsing failed: %s\n", error.c_str());
-    return false;
-  }
-
-  Serial.println("Air quality data received successfully");
-  return true;
+  // Should never reach here, but just in case
+  errorMsg = "Unknown error after retries";
+  return false;
 }
 
 void printHeapUsage()

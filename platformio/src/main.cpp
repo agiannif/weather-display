@@ -251,11 +251,12 @@ void setup()
   localtime_r(&now, &timeInfo);
 
   // MAKE API REQUESTS (Open-Meteo)
-  if (!getForecast(forecast))
+  String forecastError;
+  if (!getForecast(forecast, forecastError))
   {
     killWiFi();
-    statusStr = "Forecast API";
-    tmpStr = "Failed to fetch forecast data";
+    statusStr = "Forecast API Error";
+    tmpStr = forecastError;
     initDisplay();
     do
     {
@@ -264,11 +265,12 @@ void setup()
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
-  if (!getAirQuality(air_quality))
+  String airQualityError;
+  if (!getAirQuality(air_quality, airQualityError))
   {
     killWiFi();
-    statusStr = "Air Quality API";
-    tmpStr = "Failed to fetch air quality data";
+    statusStr = "Air Quality API Error";
+    tmpStr = airQualityError;
     initDisplay();
     do
     {

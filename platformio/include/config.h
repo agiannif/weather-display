@@ -233,8 +233,8 @@
 //   HL   : High | Low
 //   LH   : Low | High
 //
-#define TEMP_ORDER_HL
-// #define TEMP_ORDER_LH
+// #define TEMP_ORDER_HL
+#define TEMP_ORDER_LH
 
 // DAILY PRECIPITATION
 // Daily precipitation indicated under Hi|Lo can optionally be configured using
@@ -299,6 +299,8 @@ extern const char *WIFI_SSID;
 extern const char *WIFI_PASSWORD;
 extern const unsigned long WIFI_TIMEOUT;
 extern const unsigned HTTP_CLIENT_TCP_TIMEOUT;
+extern const unsigned API_RETRY_ATTEMPTS;
+extern const unsigned API_RETRY_DELAY;
 extern const String LAT;
 extern const String LON;
 extern const String CITY_STRING;

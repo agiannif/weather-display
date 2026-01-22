@@ -20,6 +20,7 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "secrets.h"
 
 // PINS
 // The configuration below is intended for use with the project's official 
@@ -47,8 +48,7 @@ const uint8_t PIN_BME_PWR =  4;   // Irrelevant if directly connected to 3.3V
 const uint8_t BME_ADDRESS = 0x76; // 0x76 if SDO -> GND; 0x77 if SDO -> VCC
 
 // WIFI
-const char *WIFI_SSID     = "ssid";
-const char *WIFI_PASSWORD = "password";
+// WIFI_SSID and WIFI_PASSWORD are defined in secrets.h
 const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 
 // HTTP
@@ -59,22 +59,16 @@ const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 //   -258 Deserialization Incomplete Input
 const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
 
+// API RETRY
+// Number of retry attempts for transient API failures (Connection Lost, Timeout, etc.)
+const unsigned API_RETRY_ATTEMPTS = 3;
+// Delay in milliseconds between retry attempts
+const unsigned API_RETRY_DELAY = 2000; // ms
+
 // LOCATION
-// Set your latitude and longitude.
-// (used to get weather data as part of API requests to Open-Meteo)
-const String LAT = "YOUR LAT";
-const String LON = "YOUR LON";
-// City name that will be shown in the top-right corner of the display.
-const String CITY_STRING = "YOUR CITY";
+// LAT, LON, CITY_STRING, TIMEZONE, and API_TIMEZONE are defined in secrets.h
 
 // TIME
-// For list of time zones see
-// https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char *TIMEZONE = "YOUR TZ";
-// Open-Meteo API timezone (IANA format or "auto")
-// Examples: "America/Los_Angeles", "Europe/London", "auto"
-// Using "auto" lets Open-Meteo determine timezone from coordinates
-const char *API_TIMEZONE = "auto";
 // Time format used when displaying sunrise/set times. (Max 11 characters)
 // For more information about formatting see
 // https://man7.org/linux/man-pages/man3/strftime.3.html

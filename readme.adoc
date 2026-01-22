@@ -81,9 +81,18 @@ pio lib update               # Update libraries
 
 == Configuration
 
-Configuration is split between two files in `platformio/`:
+Configuration is split between multiple files in `platformio/`:
 
-=== `src/config.cpp` - Credentials & Location (must change)
+=== `src/secrets.h` - Sensitive Configuration (required)
+
+IMPORTANT: Create this file from the template before building:
+
+[source,bash]
+----
+cp platformio/src/secrets.h.template platformio/src/secrets.h
+----
+
+Then edit `platformio/src/secrets.h`:
 
 [source,cpp]
 ----
@@ -91,23 +100,33 @@ Configuration is split between two files in `platformio/`:
 const char *WIFI_SSID     = "your-wifi-name";
 const char *WIFI_PASSWORD = "your-wifi-password";
 
-// Your location
+// Your location (used for Open-Meteo API requests)
 const String LAT = "40.7128";          // Latitude
 const String LON = "-74.0060";         // Longitude
 const String CITY_STRING = "New York"; // Display name
 
 // Timezone (see https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv)
 const char *TIMEZONE = "EST5EDT,M3.2.0,M11.1.0";
+
+// Open-Meteo API timezone (IANA format or "auto")
+const char *API_TIMEZONE = "auto";  // "auto" is recommended
 ----
 
-=== `src/config.cpp` - Optional Tuning
+NOTE: `secrets.h` is excluded from version control. Never commit this file.
+
+=== `src/config.cpp` - Display & Sleep Settings
 
 [source,cpp]
 ----
+// Sleep configuration
 const int SLEEP_DURATION = 30;   // Minutes between updates (2-1440)
 const int BED_TIME  = 00;        // Hour to stop updating (0-23)
 const int WAKE_TIME = 06;        // Hour to resume updating (0-23)
 const int HOURLY_GRAPH_MAX = 24; // Hours shown on graph (8-48)
+
+// API retry configuration
+const unsigned API_RETRY_ATTEMPTS = 3;  // Retry attempts for transient errors
+const unsigned API_RETRY_DELAY = 2000;  // Delay between retries (ms)
 ----
 
 === `include/config.h` - Hardware Selection (uncomment one per section)

@@ -33,8 +33,8 @@ void killWiFi();
 bool waitForSNTPSync();
 
 // API requests (Open-Meteo)
-bool getForecast(om_resp_forecast_t &forecast);
-bool getAirQuality(om_resp_air_quality_t &airQuality);
+bool getForecast(om_resp_forecast_t &forecast, String &errorMsg);
+bool getAirQuality(om_resp_air_quality_t &airQuality, String &errorMsg);
 
 // Debug
 void printHeapUsage();

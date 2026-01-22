@@ -3,6 +3,9 @@ CLAUDE.local.md
 .claude/settings.local.json
 docs/plans/*
 
+# Secrets (WiFi credentials, location)
+platformio/src/secrets.h
+
 # PlatformIO
 .pio/
 .pioenvs/
