@@ -6,11 +6,11 @@
 
 ESP32-based weather display that fetches data from Open-Meteo API and renders it on an e-paper display. Includes local environmental sensing (BME280/BME680) and battery-powered deep sleep operation.
 
-*No API key required* - Open-Meteo is free and open-source with 10,000 calls/day.
+*No API key required* - Open-Meteo is free and open-source.
 
 == About This Fork
 
-This project is a modified version of https://github.com/lmarzen/esp32-weather-epd[Luke Marzen's esp32-weather-epd]. The original project used the OpenWeatherMap API, which requires an API key and has rate limits. This fork has been migrated to use the https://open-meteo.com/[Open-Meteo API], which is free, open-source, and requires no API key.
+This project is a modified version of https://github.com/lmarzen/esp32-weather-epd[Luke Marzen's esp32-weather-epd].
 
 Please see the original project for hardware list and build guide.
 
@@ -20,11 +20,12 @@ Please see the original project for hardware list and build guide.
 * Updated data structures to match Open-Meteo's response format
 * Modified internal units to match Open-Meteo's native units (Celsius, km/h, hPa)
 * Removed features not available in Open-Meteo (weather alerts, moon phase)
+* Added API retry logic for unreliable connections
 
 *Credits:*
 
 * Original project: https://github.com/lmarzen/esp32-weather-epd[esp32-weather-epd] by Luke Marzen
-* Open-Meteo API migration: Anthony Fenzl (2026)
+* Open-Meteo API migration and further work: Anthony Fenzl (2026)
 
 Both the original and this fork are licensed under GPL v3.
 
@@ -178,31 +179,3 @@ This project uses the https://open-meteo.com/[Open-Meteo API] for weather data:
 
 * *Forecast API*: Current conditions, hourly forecast (48h), daily forecast (8 days)
 * *Air Quality API*: US AQI index
-
-*Note*: Weather alerts and moon phase data are not available from Open-Meteo.
-
-== Hardware
-
-=== Supported Components
-
-*Display panels:*
-
-* DISP_BW_V2: 7.5" e-Paper (800x480) Black/White
-* DISP_3C_B: 7.5" e-Paper (800x480) Red/Black/White
-* DISP_7C_F: 7.3" ACeP e-Paper (800x480) 7-Color
-* DISP_BW_V1: 7.5" e-Paper (640x384) Black/White
-
-*Driver boards:*
-
-* DESPI-C02 (recommended)
-* Waveshare rev2.2/2.3 (deprecated)
-
-*Sensors:*
-
-* BME280: Temperature, Humidity, Pressure
-* BME680: Temperature, Humidity, Pressure, Gas
-
-*Microcontrollers:*
-
-* DFRobot FireBeetle 2 ESP32-E (default)
-* FireBeetle32
