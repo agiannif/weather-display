@@ -89,6 +89,19 @@ typedef struct om_resp_forecast
   om_daily_t    daily[OM_NUM_DAILY];
 } om_resp_forecast_t;
 
+// Cache-friendly forecast struct for RTC memory storage.
+// Identical to om_resp_forecast_t but omits String timezone (heap-allocated,
+// cannot survive deep sleep).
+typedef struct om_resp_forecast_cached
+{
+  float        lat;
+  float        lon;
+  int          timezone_offset;
+  om_current_t current;
+  om_hourly_t  hourly[OM_NUM_HOURLY];
+  om_daily_t   daily[OM_NUM_DAILY];
+} om_resp_forecast_cached_t;
+
 // Air quality response
 typedef struct om_resp_air_quality
 {

@@ -46,6 +46,14 @@
 static om_resp_forecast_t    forecast;
 static om_resp_air_quality_t air_quality;
 
+#if STALE_DATA_ON_API_FAIL
+// RTC memory: survives deep sleep, lost on power-off/reset. ~2KB total.
+RTC_DATA_ATTR static bool                      rtc_cache_valid = false;
+RTC_DATA_ATTR static om_resp_forecast_cached_t rtc_forecast;
+RTC_DATA_ATTR static int                       rtc_aqi;
+RTC_DATA_ATTR static char                      rtc_refreshTimeStr[48];
+#endif
+
 Preferences prefs;
 
 /* Put esp32 into ultra low-power deep sleep (<11μA).
@@ -202,6 +210,9 @@ void setup()
 
   String statusStr = {};
   String tmpStr = {};
+#if STALE_DATA_ON_API_FAIL
+  bool usingCachedData = false;
+#endif
   tm timeInfo = {};
 
   // START WIFI
@@ -252,29 +263,55 @@ void setup()
 
   // MAKE API REQUESTS (Open-Meteo)
   String forecastError;
-  if (!getForecast(forecast, forecastError))
+  bool forecastOk = getForecast(forecast, forecastError);
+#if STALE_DATA_ON_API_FAIL
+  if (!forecastOk && rtc_cache_valid)
+  {
+    forecast.lat             = rtc_forecast.lat;
+    forecast.lon             = rtc_forecast.lon;
+    forecast.timezone_offset = rtc_forecast.timezone_offset;
+    forecast.current         = rtc_forecast.current;
+    memcpy(forecast.hourly, rtc_forecast.hourly, sizeof(rtc_forecast.hourly));
+    memcpy(forecast.daily,  rtc_forecast.daily,  sizeof(rtc_forecast.daily));
+    forecastOk      = true;
+    usingCachedData = true;
+    statusStr       = forecastError;
+  }
+#endif
+  if (!forecastOk)
   {
     killWiFi();
-    statusStr = "Forecast API Error";
     tmpStr = forecastError;
     initDisplay();
     do
     {
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+      drawError(wi_cloud_down_196x196, "Forecast API Error", tmpStr);
     } while (display.nextPage());
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
   String airQualityError;
-  if (!getAirQuality(air_quality, airQualityError))
+  bool airQualityOk = getAirQuality(air_quality, airQualityError);
+#if STALE_DATA_ON_API_FAIL
+  if (!airQualityOk && rtc_cache_valid)
+  {
+    air_quality.aqi = rtc_aqi;
+    airQualityOk    = true;
+    if (statusStr.isEmpty())
+      statusStr = airQualityError;
+    else
+      statusStr += " | " + airQualityError;
+    usingCachedData = true;
+  }
+#endif
+  if (!airQualityOk)
   {
     killWiFi();
-    statusStr = "Air Quality API Error";
     tmpStr = airQualityError;
     initDisplay();
     do
     {
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+      drawError(wi_cloud_down_196x196, "Air Quality API Error", tmpStr);
     } while (display.nextPage());
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
@@ -314,7 +351,8 @@ void setup()
     //       displayed.
     if (std::isnan(inTemp) || std::isnan(inHumidity))
     {
-      statusStr = "BME " + String(TXT_READ_FAILED);
+      if (statusStr.isEmpty()) statusStr = "BME " + String(TXT_READ_FAILED);
+      else                     statusStr += " | BME " + String(TXT_READ_FAILED);
       Serial.println(statusStr);
     }
     else
@@ -324,13 +362,34 @@ void setup()
   }
   else
   {
-    statusStr = "BME " + String(TXT_NOT_FOUND); // check wiring
+    if (statusStr.isEmpty()) statusStr = "BME " + String(TXT_NOT_FOUND);
+    else                     statusStr += " | BME " + String(TXT_NOT_FOUND);
     Serial.println(statusStr);
   }
   digitalWrite(PIN_BME_PWR, LOW);
 
   String refreshTimeStr;
   getRefreshTimeStr(refreshTimeStr, timeConfigured, &timeInfo);
+#if STALE_DATA_ON_API_FAIL
+  if (!usingCachedData)
+  {
+    // Save fresh data to RTC cache for future fallback
+    rtc_forecast.lat             = forecast.lat;
+    rtc_forecast.lon             = forecast.lon;
+    rtc_forecast.timezone_offset = forecast.timezone_offset;
+    rtc_forecast.current         = forecast.current;
+    memcpy(rtc_forecast.hourly, forecast.hourly, sizeof(forecast.hourly));
+    memcpy(rtc_forecast.daily,  forecast.daily,  sizeof(forecast.daily));
+    rtc_aqi = air_quality.aqi;
+    refreshTimeStr.toCharArray(rtc_refreshTimeStr, sizeof(rtc_refreshTimeStr));
+    rtc_cache_valid = true;
+  }
+  else
+  {
+    // Restore last-successful-refresh time so display shows when data was valid
+    refreshTimeStr = String(rtc_refreshTimeStr);
+  }
+#endif
   String dateStr;
   getDateStr(dateStr, &timeInfo);
 

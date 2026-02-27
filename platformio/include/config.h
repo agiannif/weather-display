@@ -271,6 +271,15 @@
 //   If you wish to disable battery monitoring set this macro to 0.
 #define BATTERY_MONITORING 1
 
+// STALE DATA FALLBACK
+//   When enabled, if an API call fails after all retries are exhausted, the
+//   display will show the last successfully fetched weather data instead of a
+//   full-screen error. The error code is shown in small print in the status bar.
+//   Weather data is stored in RTC memory: it survives deep sleep but is lost
+//   on power-off or reset.
+//   Set to 1 to enable, 0 to disable.
+#define STALE_DATA_ON_API_FAIL 1
+
 // NON-VOLATILE STORAGE (NVS) NAMESPACE
 #define NVS_NAMESPACE "weather_epd"
 
@@ -423,6 +432,9 @@ extern const uint32_t MIN_BATTERY_VOLTAGE;
 #endif
 #if !(defined(DEBUG_LEVEL))
   #error Invalid configuration. DEBUG_LEVEL not defined.
+#endif
+#if !(defined(STALE_DATA_ON_API_FAIL))
+  #error Invalid configuration. STALE_DATA_ON_API_FAIL not defined.
 #endif
 
 #endif

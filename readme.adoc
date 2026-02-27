@@ -21,6 +21,7 @@ Please see the original project for hardware list and build guide.
 * Modified internal units to match Open-Meteo's native units (Celsius, km/h, hPa)
 * Removed features not available in Open-Meteo (weather alerts, moon phase)
 * Added API retry logic for unreliable connections
+* Added stale data fallback: displays last known weather when API calls fail instead of a full-screen error
 
 *Credits:*
 
@@ -38,46 +39,63 @@ All commands run from the `platformio/` directory:
 cd platformio
 ----
 
+=== Prerequisites
+
+PlatformIO requires Python 3.10–3.13. The project uses https://docs.astral.sh/uv/[uv]
+to manage the Python environment, ensuring the correct version is used regardless
+of what's installed system-wide.
+
+Install uv if you don't have it:
+
+[source,bash]
+----
+brew install uv   # macOS
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
+----
+
+All `pio` commands must be prefixed with `uv run` so they execute inside the
+managed environment defined by `platformio/pyproject.toml`.
+
 === Build & Flash
 
 [source,bash]
 ----
-pio run                      # Build firmware
-pio run -t upload            # Build and flash to device
-pio run -t upload --upload-port /dev/ttyUSB0  # Specify port
+uv run pio run                      # Build firmware
+uv run pio run -t upload            # Build and flash to device
+uv run pio run -t upload --upload-port /dev/ttyUSB0  # Specify port
 ----
 
 === Monitor
 
 [source,bash]
 ----
-pio device monitor           # Serial monitor (115200 baud)
-pio run -t upload && pio device monitor  # Flash then monitor
+uv run pio device monitor           # Serial monitor (115200 baud)
+uv run pio run -t upload && uv run pio device monitor  # Flash then monitor
 ----
 
 === Clean
 
 [source,bash]
 ----
-pio run -t clean             # Remove build artifacts
-pio run -t fullclean         # Remove all generated files
+uv run pio run -t clean             # Remove build artifacts
+uv run pio run -t fullclean         # Remove all generated files
 ----
 
 === Environment Selection
 
 [source,bash]
 ----
-pio run -e dfrobot_firebeetle2_esp32e   # Default board
-pio run -e firebeetle32                  # Alternative board
+uv run pio run -e dfrobot_firebeetle2_esp32e   # Default board
+uv run pio run -e firebeetle32                  # Alternative board
 ----
 
 === Other Useful Commands
 
 [source,bash]
 ----
-pio device list              # List connected devices
-pio lib list                 # Show installed libraries
-pio lib update               # Update libraries
+uv run pio device list              # List connected devices
+uv run pio lib list                 # Show installed libraries
+uv run pio lib update               # Update libraries
 ----
 
 == Configuration
@@ -172,6 +190,23 @@ const unsigned API_RETRY_DELAY = 2000;  // Delay between retries (ms)
 // #define UNITS_PRES_HECTOPASCALS
 // #define UNITS_PRES_MILLIBARS
 ----
+
+=== `include/config.h` - Stale Data Fallback
+
+When enabled, if an API call fails after all retries are exhausted the display
+shows the last successfully fetched weather data instead of a full-screen error.
+The error code is shown in small print in the status bar. Weather data is stored
+in RTC memory, so it survives deep sleep between refresh cycles but is lost on
+power-off or reset.
+
+[source,cpp]
+----
+// Set to 1 to enable, 0 to disable (default: enabled)
+#define STALE_DATA_ON_API_FAIL 1
+----
+
+NOTE: On first boot (or after a power cycle) with no cached data, the existing
+full-screen error behavior is preserved.
 
 == Weather Data
 
